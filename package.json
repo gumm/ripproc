@@ -1,6 +1,6 @@
 {
   "name": "ripproc",
-  "version": "1.5.0",
+  "version": "1.6.0",
   "description": "A utility where graceful process cleanup can be executed in order",
   "repository": {
     "type": "git",

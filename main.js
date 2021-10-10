@@ -9,7 +9,7 @@ export default (logger = undefined) => {
   const log = logger || console;
   const killSet = new Set();
 
-  const gracefulShutdown = async () => {
+  const gracefulShutdown = async (fromMsg = false) => {
     log.warn('Received kill signal, shutting down gracefully.');
     for(const [f, msg] of [...killSet]) {
       try {
@@ -22,7 +22,9 @@ export default (logger = undefined) => {
       }
     }
     log.info('Shutdown Complete');
-    process.exit(0);
+    if (!fromMsg) {
+      process.exit(0);
+    }
   };
 
   // Register listeners for kill signals
@@ -33,9 +35,12 @@ export default (logger = undefined) => {
   process.once('SIGINT', gracefulShutdown);
 
   // Listen for pm2 shutdown message.
-  process.on('message', msg => {
+  process.once('message', async msg => {
+    log.info(`Received message: ${msg}`);
     if (msg === 'shutdown') {
-      gracefulShutdown().then(() => process.exit(0));
+      log.info(`Shutdown: ${msg}`)
+      await gracefulShutdown(true);
+      process.exit(0);
     }
   });
 
