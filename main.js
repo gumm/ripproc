@@ -44,7 +44,7 @@ export default (logger = undefined) => {
   // Listen for pm2 shutdown message.
   process.on('message', msg => {
     if (msg === 'shutdown') {
-      gracefulShutdown(-128, true);
+      gracefulShutdown(-128, true).then(i => i);
     }
   });
 
