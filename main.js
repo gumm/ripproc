@@ -1,54 +1,42 @@
 'use strict';
 import process from 'node:process';
 
+const identity = i => i;
+
 /**
  * @param logger
- * @returns {(function(function|promise, string=): void)}
+ * @returns {Set<function|Promise>}
  */
 export default (logger = undefined) => {
   const log = logger || console;
   const killSet = new Set();
 
-  const gracefulShutdown = async (fromMsg = false) => {
-    log.warn('Received kill signal, shutting down gracefully.');
-    for(const [f, msg] of [...killSet]) {
-      try {
-        await Promise.resolve(f());
-        if (msg) {
-          log.info(msg)
-        }
-      } catch (e) {
-        log.warn(e)
-      }
-    }
+  const finalExit = () => {
     log.info('Shutdown Complete');
-    if (!fromMsg) {
-      process.exit(0);
+    process.exit(0);
+  }
+
+  const gracefulShutdown = async () => {
+    log.warn('Received kill signal, shutting down gracefully.');
+    for (const p of [...killSet]) {
+      await p();
     }
+    finalExit()
   };
 
   // Register listeners for kill signals
   // listen for TERM signal .e.g. kill
-  process.once('SIGTERM', gracefulShutdown);
+  process.once('SIGTERM', () => gracefulShutdown().then(identity));
 
   // listen for INT signal e.g. Ctrl-C
-  process.once('SIGINT', gracefulShutdown);
+  process.once('SIGINT', () => gracefulShutdown().then(identity));
 
   // Listen for pm2 shutdown message.
-  process.once('message', async msg => {
-    log.info(`Received message: ${msg}`);
+  process.on('message', msg => {
     if (msg === 'shutdown') {
-      log.info(`Shutdown: ${msg}`)
-      await gracefulShutdown(true);
-      process.exit(0);
+      gracefulShutdown().then(identity);
     }
   });
 
-  /**
-   * @param {Function|Promise} f
-   * @param {string=} msg
-   */
-  return (f, msg = undefined) => {
-    killSet.add([f, msg])
-  }
+  return killSet;
 }
