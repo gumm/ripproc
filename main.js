@@ -11,11 +11,11 @@ export default (logger = undefined) => {
 
   const gracefulShutdown = async () => {
     log.warn('Received kill signal, shutting down gracefully.');
-    for(const funcArr of [...killSet]) {
+    for(const [f, msg] of [...killSet]) {
       try {
-        await Promise.resolve(funcArr[0]());
-        if (funcArr[1]) {
-          log.info(funcArr[1])
+        await Promise.resolve(f());
+        if (msg) {
+          log.info(msg)
         }
       } catch (e) {
         log.warn(e)
