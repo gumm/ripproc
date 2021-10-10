@@ -2,6 +2,10 @@
   "name": "ripproc",
   "version": "0.0.1",
   "description": "A utility where graceful process cleanup can be executed in order",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gumm/ripproc.git"
+  },
   "type": "module",
   "main": "main.js",
   "scripts": {
