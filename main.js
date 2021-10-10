@@ -8,8 +8,13 @@ import process from 'node:process';
 export default (logger = undefined) => {
   const log = logger || console;
   const killSet = new Set();
+  let isInProgress = false;
 
-  const gracefulShutdown = async () => {
+  const gracefulShutdown = async (signal, viaPm2 = false) => {
+    if (isInProgress) {
+      return;
+    }
+    isInProgress = true;
     log.warn('Received kill signal, shutting down gracefully.');
     for(const funcArr of [...killSet]) {
       try {
@@ -22,7 +27,11 @@ export default (logger = undefined) => {
       }
     }
     log.info('Shutdown Complete');
-    process.exit(0);
+    if (viaPm2 === true) {
+      process.exit(128 + signal);
+    } else {
+      process.exit(0);
+    }
   };
 
   // Register listeners for kill signals
@@ -35,7 +44,7 @@ export default (logger = undefined) => {
   // Listen for pm2 shutdown message.
   process.on('message', msg => {
     if (msg === 'shutdown') {
-      gracefulShutdown().then(e => e);
+      gracefulShutdown(-128, true);
     }
   });
 
