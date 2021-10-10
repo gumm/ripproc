@@ -3,7 +3,7 @@ import process from 'node:process';
 
 /**
  * @param logger
- * @returns {Set<Function|Promise>}
+ * @returns {(function(function|promise, string=): void)}
  */
 export default (logger = undefined) => {
   const log = logger || console;
@@ -11,9 +11,12 @@ export default (logger = undefined) => {
 
   const gracefulShutdown = async () => {
     log.warn('Received kill signal, shutting down gracefully.');
-    for(const func of [...killSet]) {
+    for(const funcArr of [...killSet]) {
       try {
-        await func();
+        await Promise.resolve(funcArr[0]());
+        if (funcArr[1]) {
+          log.info(funcArr[1])
+        }
       } catch (e) {
         log.warn(e)
       }
@@ -36,16 +39,11 @@ export default (logger = undefined) => {
     }
   });
 
-  return killSet;
-
-  // /**
-  //  * @param {Function|Promise} f
-  //  * @param {string} msg
-  //  */
-  // return (f, msg = undefined) => {
-  //   killSet.add(() =>
-  //       Promise.resolve(f()).then(() => {if (msg) { log.info(msg) }})
-  //   )
-  // }
-
+  /**
+   * @param {Function|Promise} f
+   * @param {string=} msg
+   */
+  return (f, msg = undefined) => {
+    killSet.add([f, msg])
+  }
 }
